@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1704.2
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iMunchWeb", "iMunchWeb\iMunchWeb.csproj", "{778CDDCE-C2D6-4FEB-A53D-A1FF77E017B2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{778CDDCE-C2D6-4FEB-A53D-A1FF77E017B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{778CDDCE-C2D6-4FEB-A53D-A1FF77E017B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{778CDDCE-C2D6-4FEB-A53D-A1FF77E017B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{778CDDCE-C2D6-4FEB-A53D-A1FF77E017B2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20069AC8-B2A7-44A8-BCC8-0A13D2F29C9E}
+	EndGlobalSection
+EndGlobal
