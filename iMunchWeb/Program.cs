@@ -1,32 +1,84 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
-using Microsoft.EntityFrameworkCore;
+﻿using System.Reflection;
+using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using iMunchWeb.Data;
-using iMunchWeb.Models;
+using iMunchWeb.Data.Entities;
+using iMunchWeb.Feature.Auth.Services;
+using iMunchWeb.Feature.Project.Commands;
+using iMunchWeb.Feature.Project.Const;
+using iMunchWeb.Feature.Project.Helpers;
+using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddIdentityServer()
-    .AddApiAuthorization<ApplicationUser, ApplicationDbContext>();
+var appSettingsSection = builder.Configuration.GetSection("AppSettings");
+var appSettings = appSettingsSection.Get<AppSettings>();
+var key = Encoding.ASCII.GetBytes(appSettings.JwtSecret);
 
-builder.Services.AddAuthentication()
-    .AddIdentityServerJwt();
+builder.Services.AddAuthentication(co =>
+    {
+        co.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        co.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddIdentityServerJwt().AddJwtBearer(jbo =>
+    {
+        jbo.RequireHttpsMetadata = false;
+        jbo.SaveToken = true;
+        jbo.TokenValidationParameters = new TokenValidationParameters()
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+builder.Services.AddAuthorization();
+builder.Services.AddMediatR(typeof(BaseResult));
+builder.Services.AddSingleton<AppSettings>(appSettings);
+builder.Services.AddTransient<ITokenService, TokenService>();
+builder.Services.AddCors();
 
 var app = builder.Build();
+
+void CreateRoles()
+{
+    using var scope = app.Services.CreateScope();
+    var roleManager = scope.ServiceProvider.GetService(typeof(RoleManager<IdentityRole>)) as RoleManager<IdentityRole>;
+    var roles = new List<string>
+    {
+        Roles.Customer,
+        Roles.Supplier
+    };
+    foreach (var r in roles)
+    {
+        if (roleManager == null) continue;
+        var hasRole = roleManager.RoleExistsAsync(r);
+        hasRole.Wait();
+        if (!hasRole.Result)
+        {
+            roleManager.CreateAsync(new IdentityRole(r)).Wait();
+        }
+    }
+}
+
+CreateRoles();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -39,11 +91,11 @@ else
     app.UseHsts();
 }
 
+app.UsePathBase(new PathString("/api"));
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
-app.UseIdentityServer();
 app.UseAuthorization();
 app.MapRazorPages();
 
